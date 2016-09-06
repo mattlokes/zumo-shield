@@ -5,3 +5,19 @@ Todo List
    - ZumoBuzzer (.h/.cpp)
    - ZumoMotors (.cpp)
    - ZumoReflectanceSensorArray (.h) 
+
+2. Zumo Resources
+      Item       | Arduino Pin                    |   PIC32 Pin          Check
+--------------------------------------------------------------------------------
+   - User LED    - D13                            -
+   - User Button - D12                            -
+   - Motor1 Dir  - D7                             -
+   - Motor2 Dir  - D8                             -
+   - Motor1 Spe  - D9 (PWM)                       -
+   - Motor2 Spe  - D10 (PWM)                      -
+   - Buzzer      - D3*/D6 (PWM)                   -
+   - Inertial    - [A5, A4]* / [D3 , D2] (i2c)    -
+   - Battery     - A1 (ADC)                       -
+   - Reflectance - [D5, A2, A0, D11, A3,D4] A4/D2 -
+   - Encoders    - D11 (CN10) , D2 (INT1)         -
+   

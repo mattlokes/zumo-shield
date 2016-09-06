@@ -2,11 +2,18 @@
 #define F_CPU 16000000UL  // Standard Arduinos run at 16 MHz
 #endif //!F_CPU
 
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
 #include "ZumoBuzzer.h"
 
-#ifdef __AVR_ATmega32U4__
+
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+
+#elif __AVR_ATmega32U4__
+
+#include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 
 // PD7 (OC4D)
 #define BUZZER_DDR  DDRD
@@ -18,6 +25,9 @@
 #define DISABLE_TIMER_INTERRUPT()  TIMSK4 = 0
 
 #else // 168P or 328P
+
+#include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 
 // PD3 (OC2B)
 #define BUZZER_DDR  DDRD
@@ -63,7 +73,12 @@ static unsigned char staccato_rest_duration;  // duration of a staccato
 
 static void nextNote();
 
-#ifdef __AVR_ATmega32U4__
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+
+#elif __AVR_ATmega32U4__
 
 // Timer4 overflow interrupt
 ISR (TIMER4_OVF_vect)
@@ -124,9 +139,14 @@ inline void ZumoBuzzer::init()
 // initializes timer4 (32U4) or timer2 (328P) for buzzer control
 void ZumoBuzzer::init2()
 {
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+  
+#elif __AVR_ATmega32U4__
   DISABLE_TIMER_INTERRUPT();
   
-#ifdef __AVR_ATmega32U4__
   TCCR4A = 0x00;  // bits 7 and 6 clear: normal port op., OC4A disconnected
                   // bits 5 and 4 clear: normal port op., OC4B disconnected
                   // bit 3 clear: no force output compare for channel A
@@ -166,7 +186,12 @@ void ZumoBuzzer::init2()
   OCR4C = top;                          // and bottom 8 bits
   TC4H = 0;                             // 0% duty cycle: top 2 bits...
   OCR4D = 0;                            // and bottom 8 bits
+  
+  BUZZER_DDR |= BUZZER;    // buzzer pin set as an output
+  sei();
 #else
+  DISABLE_TIMER_INTERRUPT();
+
   TCCR2A = 0x21;  // bits 7 and 6 clear: normal port op., OC4A disconnected
                   // bit 5 set, 4 clear: clear OC2B on comp match when upcounting, 
                   //                     set OC2B on comp match when downcounting
@@ -192,10 +217,10 @@ void ZumoBuzzer::init2()
 
   OCR2A = (F_CPU/64) / 1000;  // set TOP for freq = 1 kHz
   OCR2B = 0;                  // 0% duty cycle
-#endif
   
   BUZZER_DDR |= BUZZER;    // buzzer pin set as an output
   sei();
+#endif
 }
 
 
@@ -228,7 +253,12 @@ void ZumoBuzzer::playFrequency(unsigned int freq, unsigned int dur,
   if (multiplier == 1 && freq > 10000)
     freq = 10000;      // max frequency allowed is 10kHz
 
-#ifdef __AVR_ATmega32U4__
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+
+#elif __AVR_ATmega32U4__
   unsigned long top;
   unsigned char dividerExponent = 0;
   
@@ -267,9 +297,13 @@ void ZumoBuzzer::playFrequency(unsigned int freq, unsigned int dur,
   if (volume > 15)
     volume = 15;
 
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+
+#elif __AVR_ATmega32U4__
   DISABLE_TIMER_INTERRUPT();      // disable interrupts while writing to registers 
-  
-#ifdef __AVR_ATmega32U4__
   TCCR4B = (TCCR4B & 0xF0) | (dividerExponent + 1); // select timer 4 clock prescaler: divider = 2^n if CS4 = n+1
   TC4H = top >> 8;                                  // set timer 1 pwm frequency: top 2 bits...
   OCR4C = top;                                      // and bottom 8 bits
@@ -279,16 +313,17 @@ void ZumoBuzzer::playFrequency(unsigned int freq, unsigned int dur,
   buzzerTimeout = timeout;                          // set buzzer duration
   
   TIFR4 |= 0xFF;  // clear any pending t4 overflow int.      
+  ENABLE_TIMER_INTERRUPT();  
 #else
+  DISABLE_TIMER_INTERRUPT();      // disable interrupts while writing to registers 
   TCCR2B = (TCCR2B & 0xF8) | newCS2;  // select timer 2 clock prescaler
   OCR2A = top;                        // set timer 2 pwm frequency
   OCR2B = top >> (16 - volume);       // set duty cycle (volume)
   buzzerTimeout = timeout;            // set buzzer duration
 
   TIFR2 |= 0xFF;  // clear any pending t2 overflow int.     
-#endif
-
   ENABLE_TIMER_INTERRUPT();  
+#endif
 }
 
 
@@ -473,7 +508,13 @@ unsigned char ZumoBuzzer::isPlaying()
 //   play("T240 L8 a gafaeada c+adaeafa <aa<bac#ada c#adaeaf4");
 void ZumoBuzzer::play(const char *notes)
 {
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+#else
   DISABLE_TIMER_INTERRUPT();  // prevent this from being interrupted
+#endif
   buzzerSequence = notes;
   use_program_space = 0;
   staccato_rest_duration = 0;
@@ -482,7 +523,13 @@ void ZumoBuzzer::play(const char *notes)
 
 void ZumoBuzzer::playFromProgramSpace(const char *notes_p)
 {
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+#else
   DISABLE_TIMER_INTERRUPT();  // prevent this from being interrupted
+#endif
   buzzerSequence = notes_p;
   use_program_space = 1;
   staccato_rest_duration = 0;
@@ -493,9 +540,13 @@ void ZumoBuzzer::playFromProgramSpace(const char *notes_p)
 // stop all sound playback immediately
 void ZumoBuzzer::stopPlaying()
 {
-  DISABLE_TIMER_INTERRUPT();          // disable interrupts
  
-#ifdef __AVR_ATmega32U4__
+#ifdef __32MX340F512H__  //chipkit uc32
+  //---------------------------
+  //INSERT PIC32 CODE HERE!!!!
+  //---------------------------
+#elif __AVR_ATmega32U4__
+  DISABLE_TIMER_INTERRUPT();          // disable interrupts
   TCCR4B = (TCCR4B & 0xF0) | TIMER4_CLK_8;  // select IO clock
   unsigned int top = (F_CPU/16) / 1000;     // set TOP for freq = 1 kHz: 
   TC4H = top >> 8;                          // top 2 bits... (TC4H temporarily stores top 2 bits of 10-bit accesses)
@@ -503,6 +554,7 @@ void ZumoBuzzer::stopPlaying()
   TC4H = 0;                                 // 0% duty cycle: top 2 bits...
   OCR4D = 0;                                // and bottom 8 bits
 #else 
+  DISABLE_TIMER_INTERRUPT();          // disable interrupts
   TCCR2B = (TCCR2B & 0xF8) | TIMER2_CLK_32; // select IO clock
   OCR2A = (F_CPU/64) / 1000;                // set TOP for freq = 1 kHz
   OCR2B = 0;                                // 0% duty cycle
@@ -520,7 +572,14 @@ static char currentCharacter()
   do
   {
     if(use_program_space)
-      c = pgm_read_byte(buzzerSequence);
+    #ifdef __32MX340F512H__  //chipkit uc32
+       //---------------------------
+       //INSERT PIC32 CODE HERE!!!!
+       //---------------------------
+       c = 0; //REMOVEME
+    #else
+       c = pgm_read_byte(buzzerSequence);
+    #endif
     else
       c = *buzzerSequence;
 
