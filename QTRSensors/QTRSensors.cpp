@@ -430,11 +430,20 @@ void QTRSensorsRC::readPrivate(unsigned int *sensor_values)
     for(i = 0; i < _numSensors; i++)
     {
         sensor_values[i] = _maxValue;
+#ifdef __32MX340F512H__  //chipkit uc32
+        pinMode(_pins[i], OUTPUT);      // drive sensor line high
+        digitalWrite(_pins[i], HIGH);   // make sensor line an output
+#else // ATMEGA
         digitalWrite(_pins[i], HIGH);   // make sensor line an output
         pinMode(_pins[i], OUTPUT);      // drive sensor line high
+#endif
     }
 
+#ifdef __32MX340F512H__  //chipkit uc32
+    delayMicroseconds(100);              // charge lines for 100 us
+#else // ATMEGA
     delayMicroseconds(10);              // charge lines for 10 us
+#endif
 
     for(i = 0; i < _numSensors; i++)
     {
